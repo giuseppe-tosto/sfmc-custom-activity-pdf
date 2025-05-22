@@ -1,0 +1,59 @@
+{
+  "workflowApiVersion": "1.1",
+  "metaData": {
+    "icon": "https://sfmc-custom-activity-pdf.vercel.app/icon.svg",
+    "category": "message"
+  },
+  "type": "REST",
+  "lang": {
+    "it-IT": {
+      "name": "Custom PDF Attachment",
+      "description": "Genera un PDF dalla ricevuta e invia un’email con allegato"
+    }
+  },
+  "userInterfaces": {
+    "configModal": {
+      "url": "https://sfmc-custom-activity-pdf.vercel.app/config.html",
+      "height": 500,
+      "width": 700
+    }
+  },
+  "arguments": {
+    "execute": {
+      "inArguments": [
+        { "contactKey":   "{{Contact.Key}}" },
+        { "emailAddress": "{{Event.DEAudience-b0b704fe-b644-722c-fd94-56b18ee68c10.EmailAddress}}" },
+        { "orderID":      "{{Event.DEAudience-b0b704fe-b644-722c-fd94-56b18ee68c10.OrderID}}" },
+        { "purchaseDate": "{{Event.DEAudience-b0b704fe-b644-722c-fd94-56b18ee68c10.PurchaseDate}}" },
+        { "items":        "{{Event.DEAudience-b0b704fe-b644-722c-fd94-56b18ee68c10.Items}}" },
+        { "totalAmount":  "{{Event.DEAudience-b0b704fe-b644-722c-fd94-56b18ee68c10.TotalAmount}}" },
+        { "pdfTemplate":  "{{Event.Config.pdfTemplate}}" }
+      ],
+      "outArguments": [],
+      "url": "https://sfmc-custom-activity-pdf.vercel.app/api/execute",
+      "verb": "POST",
+      "format": "json",
+      "useJwt": true,
+      "timeout": 20000,
+      "retryCount": 0
+    }
+  },
+  "configurationArguments": {
+    "applicationExtensionKey": "907420ae-d281-4a08-bd19-d6cf0728bf85",
+    "save": {
+      "url": "https://sfmc-custom-activity-pdf.vercel.app/api/save",
+      "verb": "POST",
+      "useJwt": false
+    },
+    "publish": {
+      "url": "https://sfmc-custom-activity-pdf.vercel.app/api/publish",
+      "verb": "POST",
+      "useJwt": false
+    },
+    "validate": {
+      "url": "https://sfmc-custom-activity-pdf.vercel.app/api/validate",
+      "verb": "POST",
+      "useJwt": false
+    }
+  }
+}
