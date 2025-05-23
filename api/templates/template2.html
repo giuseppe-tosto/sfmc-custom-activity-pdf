@@ -1,1 +1,29 @@
-
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    h2 { font-size: 20px; margin-bottom: 10px; }
+    .info { margin-bottom: 15px; }
+    .info span { display: block; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 6px; }
+    .item-name { font-weight: bold; }
+    .item-qty, .item-price { text-align: right; }
+    .total { margin-top: 20px; text-align: right; font-size: 16px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>Ricevuta Ordine {{orderID}}</h2>
+  <div class="info">
+    <span><strong>Data:</strong> {{purchaseDate}}</span>
+  </div>
+  <table>
+    {{itemsRows}}
+  </table>
+  <div class="total">
+    Totale: {{totalAmount}} €
+  </div>
+</body>
+</html>
