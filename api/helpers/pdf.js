@@ -1,29 +1,29 @@
 /**
- * pdf.js
- *
- * Genera un PDF a partire da una stringa HTML, usando Puppeteer
- * che include automaticamente Chromium.
+ * Genera un PDF a partire da una stringa HTML usando chrome-aws-lambda.
+ * chrome-aws-lambda include un binario di Chromium ottimizzato per AWS Lambda/Vercel.
  */
 
-import puppeteer from 'puppeteer';
+import chromium from 'chrome-aws-lambda';
 
 /**
- * Genera un PDF da HTML
- * @param {string} html - Codice HTML completo da convertire in PDF
+ * @param {string} html – HTML completo da convertire in PDF
  * @returns {Promise<Buffer>} Buffer contenente i byte del PDF
  */
 export async function generatePdf(html) {
-  // Avvia Chromium incluso in puppeteer
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    headless: true
+  // Avvia Chromium fornito da chrome-aws-lambda
+  const browser = await chromium.puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless,
   });
 
   try {
     const page = await browser.newPage();
+    // Carica il contenuto HTML e aspetta che non ci siano richieste pendenti
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Stampa in PDF formato A4
+    // Genera PDF in A4 con margini e sfondi
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
