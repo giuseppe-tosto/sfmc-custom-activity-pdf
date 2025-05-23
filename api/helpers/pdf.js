@@ -1,37 +1,38 @@
 /**
- * Genera un PDF a partire da una stringa HTML usando chrome-aws-lambda.
- * chrome-aws-lambda include un binario di Chromium ottimizzato per AWS Lambda/Vercel.
+ * Questo modulo genera un PDF da HTML chiamando l'API esterna PDFShift.
+ * Non usa nessun Chromium locale, quindi è 100% serverless-friendly.
+ *
+ * Variabili d'ambiente:
+ *   PDFSHIFT_API_KEY  –  la tua chiave privata da https://pdfshift.io
  */
 
-import chromium from 'chrome-aws-lambda';
+import fetch from 'node-fetch';
 
-/**
- * @param {string} html – HTML completo da convertire in PDF
- * @returns {Promise<Buffer>} Buffer contenente i byte del PDF
- */
 export async function generatePdf(html) {
-  // Avvia Chromium fornito da chrome-aws-lambda
-  const browser = await chromium.puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath,
-    headless: chromium.headless,
+  // Costruiamo il payload per PDFShift
+  const url = 'https://api.pdfshift.io/v3/convert/';
+  const payload = {
+    source: html,
+    // puoi aggiungere opzioni come margins, format: "A4", ecc.
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      // Autenticazione Basic: chiave + “:”
+      'Authorization': 'Basic ' +
+        Buffer.from(`${process.env.PDFSHIFT_API_KEY}:`).toString('base64')
+    },
+    body: JSON.stringify(payload)
   });
 
-  try {
-    const page = await browser.newPage();
-    // Carica il contenuto HTML e aspetta che non ci siano richieste pendenti
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    // Genera PDF in A4 con margini e sfondi
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
-    });
-
-    return pdfBuffer;
-  } finally {
-    await browser.close();
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`PDFShift error ${res.status}: ${text}`);
   }
+
+  // PDFShift risponde con il PDF raw
+  const buffer = await res.buffer();
+  return buffer;
 }
