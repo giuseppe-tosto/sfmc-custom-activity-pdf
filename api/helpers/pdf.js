@@ -1,38 +1,66 @@
 /**
- * Questo modulo genera un PDF da HTML chiamando l'API esterna PDFShift.
- * Non usa nessun Chromium locale, quindi è 100% serverless-friendly.
+ * pdf.js
  *
- * Variabili d'ambiente:
- *   PDFSHIFT_API_KEY  –  la tua chiave privata da https://pdfshift.io
+ * Questo modulo espone la funzione `generatePdf(html)` per convertire una stringa HTML
+ * in un file PDF utilizzando il servizio esterno PDFShift. È completamente serverless-friendly
+ * e non richiede alcun binario locale di Chromium.
+ *
+ *  Requisiti:
+ *   - Variabile d’ambiente `PDFSHIFT_API_KEY` impostata con la tua API Key di PDFShift
+ *     (https://pdfshift.io)
+ *
+ * Utilizzo:
+ *   import { generatePdf } from './helpers/pdf.js';
+ *   const pdfBuffer = await generatePdf('<h1>Ciao PDF</h1>');
  */
 
 import fetch from 'node-fetch';
 
+ /**
+  * Genera un PDF a partire da HTML chiamando l’API PDFShift.
+  *
+  * @param {string} html - Il codice HTML completo da convertire in PDF.
+  * @returns {Promise<Buffer>} - Un Buffer contenente i byte del PDF generato.
+  * @throws {Error} - Se la chiamata all’API restituisce un errore HTTP o un payload non valido.
+  */
 export async function generatePdf(html) {
-  // Costruiamo il payload per PDFShift
-  const url = 'https://api.pdfshift.io/v3/convert/';
+  // Endpoint ufficiale di PDFShift per la conversione HTML→PDF
+  const url = 'https://api.pdfshift.io/v3/convert/pdf';
+
+  // Corpo della richiesta, con il campo `source` che contiene l’HTML da convertire
   const payload = {
-    source: html,
-    // puoi aggiungere opzioni come margins, format: "A4", ecc.
+    source: html
+    // Possibili opzioni aggiuntive (non usate qui):
+    // margin: { top: '20px', bottom: '20px' },
+    // format: 'A4',
+    // header: { height: '20mm', contents: '<div>Header</div>' },
+    // footer: { height: '20mm', contents: '<div>Page {{page}} of {{pages}}</div>' },
   };
 
-  const res = await fetch(url, {
+  // Prepariamo le intestazioni:
+  // - Content-Type: JSON
+  // - Authorization: Basic auth con la API Key
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Basic ' + Buffer.from(`${process.env.PDFSHIFT_API_KEY}:`).toString('base64')
+  };
+
+  // Eseguiamo la richiesta POST verso PDFShift
+  const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      // Autenticazione Basic: chiave + “:”
-      'Authorization': 'Basic ' +
-        Buffer.from(`${process.env.PDFSHIFT_API_KEY}:`).toString('base64')
-    },
+    headers,
     body: JSON.stringify(payload)
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`PDFShift error ${res.status}: ${text}`);
+  // Se lo status HTTP non è 2xx, consideriamo fallita la richiesta
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`PDFShift error ${response.status}: ${errorText}`);
   }
 
-  // PDFShift risponde con il PDF raw
-  const buffer = await res.buffer();
-  return buffer;
+  // PDFShift restituisce direttamente il contenuto raw del PDF
+  const pdfBuffer = await response.buffer();
+
+  // Ritorniamo il Buffer da inviare come allegato o salvare
+  return pdfBuffer;
 }
