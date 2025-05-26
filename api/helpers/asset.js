@@ -1,9 +1,15 @@
 import fetch from 'node-fetch';
-import { getAccessToken } from './auth.js';
+// Import come default se auth.js esporta getAccessToken come default
+import getAccessToken from './auth.js';
 
 /**
  * Carica un PDF buffer in Content Builder come asset di tipo "file"
  * e restituisce l'URL pubblico per il recupero HTTP.
+ *
+ * @param {Object} params
+ * @param {Buffer} params.pdfBuffer - Il buffer del PDF generato
+ * @param {string} params.fileName  - Il nome con cui salvare il file (es. "Receipt_123.pdf")
+ * @returns {Promise<string>} URL pubblico dove il PDF è raggiungibile via HTTP
  */
 export async function uploadPdfAsset({ pdfBuffer, fileName }) {
   const token = await getAccessToken();
@@ -31,6 +37,5 @@ export async function uploadPdfAsset({ pdfBuffer, fileName }) {
   }
 
   const data = await res.json();
-  // l'URL su cui AttachFile potrà recuperare il PDF
   return data.fileProperties.url;
 }
