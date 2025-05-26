@@ -15,7 +15,7 @@
  * @param {string} params.contactKey    - SubscriberKey del destinatario
  * @param {Buffer} params.pdfBuffer     - Buffer contenente il PDF
  * @param {string} params.fileName      - Nome del file allegato (es. "Receipt_ORD123.pdf")
- * @returns {Promise<string>}           - ID del messaggio inviato o risposta JSON
+ * @returns {Promise<string>}           - ID del messaggio inviato (requestId) o risposta JSON
  * @throws {Error}                      - Se la chiamata REST fallisce
  */
 
@@ -34,13 +34,13 @@ export async function sendEmailWithAttachment({
 
   const url = `https://${process.env.MC_SUBDOMAIN}.rest.marketingcloudapis.com/messaging/v1/email/messages`;
 
-  // Costruisci il payload corretto con "recipients" (array) e "attachments"
+  // Payload corretto secondo la spec REST:
   const payload = {
     definitionKey,
     recipients: [
       {
-        address: to,
-        subscriberKey: contactKey
+        to: contactKey,       // Corretto: "to" è l'indirizzo email
+        contactKey: to        // Corretto: "contactKey" è la chiave del contatto
       }
     ],
     attachments: [
@@ -52,7 +52,6 @@ export async function sendEmailWithAttachment({
     ]
   };
 
-  // Esegui la richiesta POST
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -62,14 +61,12 @@ export async function sendEmailWithAttachment({
     body: JSON.stringify(payload)
   });
 
-  // Leggi la risposta JSON
   const data = await response.json();
 
-  // Se non è OK, solleva un errore con dettagli
   if (!response.ok) {
     throw new Error(`Transactional API error: ${response.status} ${JSON.stringify(data)}`);
   }
 
-  // Restituisci l'ID del messaggio o l'intera risposta
+  // Restituisci requestId o intera risposta JSON
   return data.requestId || data.id || JSON.stringify(data);
 }
