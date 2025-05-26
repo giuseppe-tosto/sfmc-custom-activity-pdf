@@ -9,9 +9,6 @@
  *   - Variabile d’ambiente `PDFSHIFT_API_KEY` impostata con la tua API Key di PDFShift
  *     (https://pdfshift.io)
  *
- * Utilizzo:
- *   import { generatePdf } from './helpers/pdf.js';
- *   const pdfBuffer = await generatePdf('<h1>Ciao PDF</h1>');
  */
 
 import fetch from 'node-fetch';
