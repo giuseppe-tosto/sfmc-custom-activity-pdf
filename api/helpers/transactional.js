@@ -1,72 +1,48 @@
-
-/**
- * transactional.js
- *
- * Questo modulo invia email transazionali con allegato PDF
- * tramite la Transactional Messaging REST API di Salesforce Marketing Cloud.
- *
- * Variabili d'ambiente richieste:
- *   - MC_SUBDOMAIN          : sottodominio SFMC (es. "mc1234567")
- *
- * @param {Object} params
- * @param {string} params.token         - Access token OAuth2 SFMC
- * @param {string} params.definitionKey - External Key della Transactional Send Definition
- * @param {string} params.to            - Indirizzo email del destinatario
- * @param {string} params.contactKey    - SubscriberKey del destinatario
- * @param {Buffer} params.pdfBuffer     - Buffer contenente il PDF
- * @param {string} params.fileName      - Nome del file allegato (es. "Receipt_ORD123.pdf")
- * @returns {Promise<string>}           - ID del messaggio inviato (requestId) o risposta JSON
- * @throws {Error}                      - Se la chiamata REST fallisce
- */
-
 import fetch from 'node-fetch';
+import { uploadPdfAsset } from './asset.js';
+import { getAccessToken } from './auth.js';
 
 export async function sendEmailWithAttachment({
-  token,
   definitionKey,
   to,
   contactKey,
   pdfBuffer,
   fileName
 }) {
-  // DEBUG: verifica la definitionKey in uso
-  console.log('🔍 DEBUG definitionKey:', definitionKey);
+  // 1) carico il PDF e ottengo l'URL
+  const assetUrl = await uploadPdfAsset({ pdfBuffer, fileName });
 
-  const url = `https://${process.env.MC_SUBDOMAIN}.rest.marketingcloudapis.com/messaging/v1/email/messages`;
+  // 2) recupero un token OAuth2
+  const token = await getAccessToken();
 
-  // Payload corretto secondo la spec REST:
+  // 3) costruisco il payload REST senza attachments
   const payload = {
     definitionKey,
     recipients: [
-      {
-        to: contactKey,       // Corretto: "to" è l'indirizzo email
-        contactKey: to        // Corretto: "contactKey" è la chiave del contatto
-      }
+      { contactKey, to }
     ],
-    attachments: [
-      {
-        name: fileName,
-        type: 'application/pdf',
-        content: pdfBuffer.toString('base64')
-      }
-    ]
+    attributes: {
+      // il nome "AttachmentURL" dev'essere usato
+      // nel tuo template AMPscript: %%=AttachFile("HTTP", AttributeValue("AttachmentURL"), fileName, false)=%%
+      AttachmentURL: assetUrl
+    }
   };
 
-  const response = await fetch(url, {
+  // 4) invio l'email via REST Transactional Messaging API
+  const url = `https://${process.env.MC_SUBDOMAIN}.rest.marketingcloudapis.com/messaging/v1/email/messages`;
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      'Content-Type':   'application/json'
     },
     body: JSON.stringify(payload)
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(`Transactional API error: ${response.status} ${JSON.stringify(data)}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`Transactional API error ${res.status}: ${JSON.stringify(data)}`);
   }
 
-  // Restituisci requestId o intera risposta JSON
-  return data.requestId || data.id || JSON.stringify(data);
+  return data.requestId || data.id;
 }
